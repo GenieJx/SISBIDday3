@@ -1,0 +1,139 @@
+---
+title: "SISBIDday3"
+author: "Eugenie Jackson"
+date: "July 13, 2016"
+output: html_document
+---
+
+```{r}
+library("dplyr", lib.loc="~/R/win-library/3.3")
+library("gapminder", lib.loc="~/R/win-library/3.3")
+str(gapminder)
+gtbl<-gapminder
+glimpse(gtbl)
+filter(gtbl, lifeExp < 29) #notice no quotes for var
+filter(gtbl, country == "Rwanda")
+select(gtbl,country,pop,continent) #notice no vector for var
+arrange(gtbl,pop) 
+arrange(gtbl,desc(pop)) 
+arrange(gtbl,year, lifeExp)
+gtbl = mutate(gtbl,newVar=(lifeExp/gdpPercap), newVar2 = newVar*2)
+select(gtbl,lifeExp,gdpPercap,newVar)
+distinct(gtbl)
+
+```
+
+```{r}
+#set.seed(123545)
+sample_n(gtbl,3)
+sample_frac(gtbl,0.01)
+```
+
+```{r}
+
+#pipes
+head(gtbl)
+gtbl %>% head #equivalent
+head(gtbl,3)
+gtbl %>% head(3)
+
+gtbl1 = gtbl[gtbl$continent=="Asia",]
+gtbl2 = gtbl1[gtbl1$lifeExp < 65,]
+#set.seed(32)
+gtbl3 = gtbl2[sample(1:dim(gtbl2)[1],size=10),]
+gtbl3
+
+#equivalently, think of %>% as "then"
+
+#set.seed(32)
+gtbl %>% filter(continent == "Asia") %>% 
+         filter(lifeExp < 65) %>%
+         sample_n(10)
+
+gtbl %>% filter(continent %in% c("Asia", "Africa")) %>% 
+         filter(lifeExp < 65) %>%
+         sample_n(10)
+
+#Here's split-apply-combine
+gtbl %>% group_by(continent) %>% 
+      summarize(aveLife = mean(lifeExp))
+
+gtbl %>% group_by(continent) %>% 
+      summarize(aveLife = mean(lifeExp), sdLife=sd(lifeExp))
+
+gtbl %>%summarize(aveLife = mean(lifeExp))
+#same result,worse label
+gtbl %>%summarize(mean(lifeExp))
+```
+
+```{r}
+gtbl %>% group_by(continent) %>% 
+      summarize(aveLife = mean(lifeExp), n=n())
+```
+
+Lab
+```{r}
+library("readxl")
+dat=read_excel("1000genomes.xlsx", 4, skip=1) #fourth sheet
+dat=dat[,1:7]
+
+dat %>% group_by(Platform) %>% summarize(totSeq = sum(`Total Sequence`, na.rm=T))
+```
+
+Do the same thing by sequencing center
+
+```{r}
+dat %>% group_by(Center) %>% summarize(totSeq = sum(`Total Sequence`, na.rm=T))
+
+```
+
+Find the subset of samples that passed QC.
+
+```{r}
+PassedQCsubset<-dat %>% filter(`Passed QC`==1)
+
+```
+
+
+Find the subset that passed QC and came from the BCM center
+
+```{r}
+PassedQC_BCMsubset<-dat %>% filter(`Passed QC`==1 & Center =="BCM")
+```
+
+Calculate the average aligned coverage for each population on the subset of samples that passed QC that came from the BCM. 
+
+```{r}
+PassedQC_BCMsubset %>% group_by(Population) %>% 
+      summarize(aveAlCov = mean(`Aligned Non Duplicated Coverage`))
+
+```
+
+
+```{r}
+superheroes <-
+  c("    name, alignment, gender,         publisher",
+    " Magneto,       bad,   male,            Marvel",
+    "   Storm,      good, female,            Marvel",
+    "Mystique,       bad, female,            Marvel",
+    "  Batman,      good,   male,                DC",
+    "   Joker,       bad,   male,                DC",
+    "Catwoman,       bad, female,                DC",
+    " Hellboy,      good,   male, Dark Horse Comics")
+
+superheroes <- read.csv(text = superheroes, strip.white = TRUE)
+
+publishers <- 
+  c("publisher, yr_founded",
+    "       DC,       1934",
+    "   Marvel,       1939",
+    "    Image,       1992")
+publishers <- read.csv(text = publishers, strip.white = TRUE)
+ijsp = inner_join(superheroes, publishers)
+ijsp
+ljsp = left_join(superheroes, publishers)
+ljsp
+fjsp <- full_join(superheroes, publishers)
+fjsp
+```
+
